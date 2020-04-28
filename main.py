@@ -9,7 +9,7 @@ import sqs_recieve
 if __name__ == "__main__":
 
     # i don't know if we want to use this
-    node_id = int(sys.argv[1])
+    #node_id = int(sys.argv[1])
 
     with open('ec2_setup.json') as f:
         CONFIG = json.load(f)
