@@ -16,14 +16,15 @@ class blockchain:
             self.genesisBlock = self.createGenesisBlock()
 
         self.blocks = [self.genesisBlock]
+        self.pendingTransactions = list()
     
-    #(self, index, nonce, timestamp, data, prevHash, numberOfZeros, signed='')
+    #(self, index, nonce, timestamp,.pendingTransactions, prevHash, numberOfZeros, signed='')
     def createGenesisBlock(self): 
         return Block(0, 1, datetime.datetime.utcnow(), 'genesis', 0, 0, True)
     
-    def addBlockToChain(self, nonce, data, numberOfZeros, signed):
+    def addBlockToChain(self, nonce, pendingTransactions, numberOfZeros, signed):
         prevHash = getPrevHash()
-        self.blocks.append(Block(len(self.blocks), nonce, datetime.datetime.utcnow(), data, prevHash, numberOfZeros, signed))
+        self.blocks.append(Block(len(self.blocks), nonce, datetime.datetime.utcnow(), pendingTransactions, prevHash, numberOfZeros, signed))
 
     def createChainIfDoesNotExist(self):
         if not os.path.isfile(self.blockchainFile):
@@ -32,35 +33,16 @@ class blockchain:
     
     def getPrevHash(self):
         latestBlock = self.blocks.pop()
-        return latestBlock.getBlockData['hash']
+        return latestBlock.getBloc.pendingTransactions['hash']
 
     # does not include genesis block
     def getLength(self): 
         return len(self.blocks)-1
 
-    def server_ui(self):
+    def addpendingTransactions(self,pendingTransaction):
 
-        while True:
-
-            print("")
-            print("Please select from the following menu:")
-            print("1. ") 
-            print("2. ") 
-            print("3. ") 
-
-            print("")
-
-            user_input = input()
+        self.pendingTransactions.append(pendingTransaction)
+        print(self.pendingTransactions)
 
 
-            if user_input == "1":
 
-                pass
-
-            if user_input == "2":
-
-                pass
-
-            if user_input == "3":
-               
-               pass
