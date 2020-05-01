@@ -16,7 +16,7 @@ if __name__ == "__main__":
 
     mySqs = Sqs(CONFIG, node_id)
 
-    blockchain = blockchain()
+    blockchain = blockchain("blockchain_" + str(node_id) + ".txt")
 
     print('################################################\n')
     print('###########    Blockchain Started    ###########\n')
@@ -27,7 +27,7 @@ if __name__ == "__main__":
         #if message_recieved != None:
         #    pass
 
-        blockchain.createChainIfDoesNotExist()
+        #blockchain.createChainIfDoesNotExist()
         nodes =['n1', 'n2', 'n3']
         while True:
             firstNode = random.choice(nodes)

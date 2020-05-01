@@ -1,39 +1,51 @@
 from block import Block
 import datetime, os
 
-BLOCKCHAINFILE = 'blockchain.txt'
-
 class blockchain:
     # when initalizing create a genesis block
-    def __init__(self): 
+    def __init__(self, blockchainFile: str): 
 
-        directory = os.path.dirname(os.path.realpath(__file__))
-        self.blockchainFile = os.path.join(directory, BLOCKCHAINFILE)
+        self.blockchainFile = blockchainFile
+        self.blocks = []
+        self.pendingTransactions = []
 
-        self.createChainIfDoesNotExist()
+        if os.path.isfile(self.blockchainFile):
 
-        if os.stat(self.blockchainFile).st_size == 0:
-            self.genesisBlock = self.createGenesisBlock()
+            # Read blocks from file
+            self.build_chain_from_file(self.blockchainFile)
 
-        self.blocks = [self.genesisBlock]
-        self.pendingTransactions = list()
+        else:
+            genesisBlock = self.createGenesisBlock()
+            self.blocks.append(genesisBlock)
+            self.writeBlockToFile(genesisBlock)
+
+    def build_chain_from_file(self, blockchainFile):
+
+        with open(blockchainFile, "r") as f:
+            lines = f.readlines()
+
+        for line in lines:
+            block_to_add = Block.from_json(line)
+            self.blocks.append(block_to_add)
     
+    def writeBlockToFile(self, block_to_write: Block):
+
+        with open(self.blockchainFile, "a") as f:
+            f.write(block_to_write.to_json())
+
     #(self, index, nonce, timestamp,.pendingTransactions, prevHash, numberOfZeros, signed='')
     def createGenesisBlock(self): 
         return Block(0, 1, datetime.datetime.utcnow(), 'genesis', 0, 0, True)
     
     def addBlockToChain(self, nonce, pendingTransactions, numberOfZeros, signed):
         prevHash = getPrevHash()
-        self.blocks.append(Block(len(self.blocks), nonce, datetime.datetime.utcnow(), pendingTransactions, prevHash, numberOfZeros, signed))
+        block_to_append = Block(len(self.blocks), nonce, datetime.datetime.utcnow(), pendingTransactions, prevHash, numberOfZeros, signed)
+        self.blocks.append(block_to_append)
+        self.writeBlockToFile(block_to_append)
 
-    def createChainIfDoesNotExist(self):
-        if not os.path.isfile(self.blockchainFile):
-            file = open(self.blockchainFile, 'w')
-            file.close()
-    
     def getPrevHash(self):
-        latestBlock = self.blocks.pop()
-        return latestBlock.getBloc.pendingTransactions['hash']
+        latestBlock = self.blocks[-1]
+        return latestBlock.hash
 
     # does not include genesis block
     def getLength(self): 
