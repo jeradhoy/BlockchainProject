@@ -3,7 +3,7 @@ import json
 import threading
 import random
 import time
-from blockchain import blockchain
+from blockchain import Blockchain
 from sqs_recieve import Sqs
 import sqs_recieve
 
@@ -16,7 +16,7 @@ if __name__ == "__main__":
 
     mySqs = Sqs(CONFIG, node_id)
 
-    blockchain = blockchain("blockchain_" + str(node_id) + ".txt")
+    blockchain = Blockchain("blockchain_" + str(node_id) + ".txt")
 
     print('################################################\n')
     print('###########    Blockchain Started    ###########\n')

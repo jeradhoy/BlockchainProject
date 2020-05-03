@@ -1,7 +1,8 @@
 from block import Block
 import datetime, os
 
-class blockchain:
+class Blockchain:
+
     # when initalizing create a genesis block
     def __init__(self, blockchainFile: str): 
 
