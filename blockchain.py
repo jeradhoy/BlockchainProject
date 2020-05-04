@@ -4,7 +4,7 @@ import datetime, os
 class Blockchain:
 
     # when initalizing create a genesis block
-    def __init__(self, blockchainFile: str): 
+    def __init__(self, blockchainFile: str, num_zeroes=4): 
 
         self.blockchainFile = blockchainFile
         self.blocks = []
@@ -36,7 +36,7 @@ class Blockchain:
 
     #(self, index, nonce, timestamp,.pendingTransactions, prevHash, numberOfZeros, signed='')
     def createGenesisBlock(self): 
-        return Block(0, 1, datetime.datetime.utcnow(), 'genesis', 0, 0, True)
+        return Block(0, 1, 'genesis', '0000', True)
     
     def addBlockToChain(self, nonce, pendingTransactions, numberOfZeros, signed):
         prevHash = getPrevHash()
@@ -56,6 +56,9 @@ class Blockchain:
 
         self.pendingTransactions.append(pendingTransaction)
         print(self.pendingTransactions)
+
+    def mineBlock(self, block: Block):
+
 
 
 
