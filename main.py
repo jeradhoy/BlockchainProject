@@ -64,7 +64,7 @@ class Client:
             self.sqs_instance.send_message_to_all_other_nodes(msg)
 
             # Start mining block
-            threading.Thread(target = self.blockchain.mineTransaction, args=[trans]).start()
+            self.blockchain.transaction_queue.append(trans)
 
     def listen(self):
 
@@ -91,7 +91,7 @@ class Client:
             if "Transaction" in msg_json.keys(): 
 
                 trans_obj = Transaction.from_json(msg_json["Transaction"])
-                threading.Thread(target = self.blockchain.mineTransaction, args=[trans_obj]).start()
+                self.blockchain.transaction_queue.append(trans_obj)
 
             elif "MinedBlock" in msg_json.keys():
 
@@ -113,6 +113,9 @@ if __name__ == "__main__":
     # Start listener
     listenerThread = threading.Thread(target = client.listen)
     listenerThread.start()
+
+    miningThread = threading.Thread(target = client.blockchain.miningLoop)
+    miningThread.start()
 
     client.mainloop()
 

@@ -12,12 +12,11 @@ import threading
 class Blockchain:
 
     # when initalizing create a genesis block
-    def __init__(self, blockchainFile: str, num_zeroes=5):
+    def __init__(self, blockchainFile: str, num_zeroes=6):
 
         self.blockchainFile = blockchainFile
         self.num_zeroes = num_zeroes
         self.blocks = []
-        self.is_mining = False
         # self.pendingTransactions = []
 
         if os.path.isfile(self.blockchainFile):
@@ -29,6 +28,8 @@ class Blockchain:
             genesisBlock = self.createGenesisBlock()
             self.blocks.append(genesisBlock)
             self.writeBlockToFile(genesisBlock)
+        
+        self.transaction_queue = []
 
     def build_chain_from_file(self, blockchainFile):
 
@@ -42,7 +43,7 @@ class Blockchain:
     def writeBlockToFile(self, block_to_write: Block):
 
         with open(self.blockchainFile, "a") as f:
-            f.write(block_to_write.to_json())
+            f.write(block_to_write.to_json() + "\n")
 
     # (self, index, nonce, timestamp,.pendingTransactions, prevHash, numberOfZeros, signed='')
     def createGenesisBlock(self):
@@ -109,6 +110,7 @@ class Blockchain:
             return False
 
         self.blocks.append(block)
+        self.writeBlockToFile(block)
         return True
 
 
@@ -129,6 +131,17 @@ class Blockchain:
         for block in self.blocks:
             block.print()
             print("-"*30)
+
+    def miningLoop(self):
+
+        while True:
+
+            if len(self.transaction_queue) == 0:
+                continue
+
+            trans = self.transaction_queue.pop(0)
+
+            self.mineTransaction(trans)
 
     def mineTransaction(self, trans: Transaction):
 
