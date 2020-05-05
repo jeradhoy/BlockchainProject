@@ -56,10 +56,56 @@ class Blockchain:
     #     self.blocks.append(block_to_append)
     #     self.writeBlockToFile(block_to_append)
 
+    def check_no_double_spending(self, block: Block):
+
+        # Check each transaction
+        for trans in block.data.trans:
+
+            account_name = trans["from"]
+            account_balance_needed = trans["amt"]
+            account_balance = 0
+
+            # Look through blocks in reverse
+            for prev_block in self.blocks[::1]:
+
+                for prev_trans in prev_block.data.trans:
+
+                    # Account received money, increase balance
+                    if prev_trans["to"] == account_name:
+                        account_balance += prev_trans["amt"]
+
+                    # Account sent money, decrease balance
+                    if prev_trans["from"] == account_name:
+                        account_balance -= prev_trans["amt"]
+
+                for prev_coinbase in prev_block.data.coinbase:
+
+                    # Account added money, increase balance
+                    if prev_coinbase["account"] == account_name:
+                        account_balance += prev_coinbase["amt"]
+
+                if account_balance > account_balance_needed:
+                    return True
+
+            return False
+
+        # Not transactions, nothing to verify
+        return True
+
+
+
     def addBlockToChain(self, block: Block):
 
         if block.prevHash != self.getPrevHash():
             print("Block prevhash not matchin my prevhash!!!")
+            return False
+        
+        if not block.hash.startswith("0"*self.num_zeroes):
+            print("Block has not met the difficulty set!!!")
+            return False
+
+        if not self.check_no_double_spending(block):
+            print("Double spending found!!!")
             return False
 
         self.blocks.append(block)
@@ -79,12 +125,19 @@ class Blockchain:
     #     print(self.pendingTransactions)
 
     def print(self):
+        print("-"*30)
         for block in self.blocks:
-            print(block)
+            block.print()
+            print("-"*30)
 
     def mineTransaction(self, trans: Transaction):
 
         block = Block(len(self.blocks), 1, trans, self.getPrevHash())
+
+        if not self.check_no_double_spending(block):
+            print("Double spending found!!! Not mining block!")
+            return False
+
         print("Mining block: " + block.to_json())
 
         while block.prevHash == self.getPrevHash():

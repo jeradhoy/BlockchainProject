@@ -53,7 +53,8 @@ class Client:
                 trans.add_transfer(from_act, to_act, amt)
 
             elif user_input == "3":
-                print(self.blockchain)
+                self.blockchain.print()
+                continue
 
             else:
                 continue

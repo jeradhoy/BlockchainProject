@@ -68,6 +68,13 @@ class Block:
         obj_dict["data"] = obj_dict["data"].__str__()
         return json.dumps(self.__dict__)
 
+    def print(self):
+        print("Block: " + str(self.index))
+        print("Nonce: " + str(self.nonce))
+        self.data.print()
+        print("PrevHash: " + str(self.prevHash))
+        print("Hash: " + self.hash)
+
 
 if __name__ == "__main__":
     myblock = Block(1, 2, "emow", "234234234")
