@@ -5,7 +5,7 @@ from typing import *
 class Blockchain:
 
     # when initalizing create a genesis block
-    def __init__(self, blockchainFile: str, num_zeroes=4): 
+    def __init__(self, blockchainFile: str): 
 
         self.blockchainFile = blockchainFile
         self.blocks = []
@@ -57,6 +57,3 @@ class Blockchain:
 
         self.pendingTransactions.append(pendingTransaction)
         print(self.pendingTransactions)
-
-    def mineBlock(self, block: Block):
-        pass

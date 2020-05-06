@@ -4,15 +4,12 @@ import datetime
 from dateutil import parser
 
 class Block:
-    def __init__(self, index, nonce, data, prevHash, signed=''):
+    def __init__(self, index, data, prevHash):
+
         self.index = index
-        self.nonce = nonce
-        # self.timestamp = timestamp
-        # self.numberOfZeros = numberOfZeros
         self.data = data
         self.prevHash = prevHash
         self.hash = self.hashBlock()
-        self.signed = signed
 
     # hashes itself with SHA256 and assigns value
     def hashBlock(self):
