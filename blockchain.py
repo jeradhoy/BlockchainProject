@@ -51,12 +51,6 @@ class Blockchain:
         gen_block.hash = "000000000000000000000000000000"
         return gen_block
 
-    # def addBlockToChain(self, nonce, pendingTransactions, numberOfZeros, signed):
-    #     prevHash = getPrevHash()
-    #     block_to_append = Block(len(self.blocks), nonce, datetime.datetime.utcnow(), pendingTransactions, prevHash, numberOfZeros, signed)
-    #     self.blocks.append(block_to_append)
-    #     self.writeBlockToFile(block_to_append)
-
     def check_no_double_spending(self, block: Block):
 
         # Check each transaction
@@ -117,14 +111,6 @@ class Blockchain:
     def getPrevHash(self):
         return self.blocks[-1].hash
 
-    # does not include genesis block
-    # def getLength(self):
-    #     return len(self.blocks)-1
-
-    # def addpendingTransactions(self,pendingTransaction):
-
-    #     self.pendingTransactions.append(pendingTransaction)
-    #     print(self.pendingTransactions)
 
     def print(self):
         print("-"*30)
