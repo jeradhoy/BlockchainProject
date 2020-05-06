@@ -4,11 +4,12 @@ import threading
 import random
 import time
 from blockchain import Blockchain
-from sqs_recieve import Sqs
 from transaction import Transaction
 from typing import *
 from block import Block
 
+sys.path.append("../")
+from sqs_recieve import Sqs
 
 class Client:
 
@@ -105,7 +106,7 @@ if __name__ == "__main__":
 
     node_id = int(sys.argv[1])
 
-    with open('ec2_setup.json') as f:
+    with open('../ec2_setup.json') as f:
         CONFIG = json.load(f)
 
     client = Client(node_id, CONFIG)

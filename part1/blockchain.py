@@ -5,7 +5,6 @@ from transaction import Transaction
 import json
 import time
 from typing import *
-from sqs_recieve import Sqs
 import threading
 
 
