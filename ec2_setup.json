@@ -25,5 +25,25 @@
             "id": 4,
             "queue_url": "https://sqs.us-east-2.amazonaws.com/630265412085/ec25.fifo"	
         }
+    ],
+    "leader": {
+            "queue_name": "leader.fifo",
+            "queue_url": "https://sqs.us-east-2.amazonaws.com/630265412085/leader.fifo"
+
+    },
+    "clients": [
+        {
+            "id": 0,
+            "queue_name": "client0.fifo",
+            "queue_url": "https://sqs.us-east-2.amazonaws.com/630265412085/client0.fifo"
+
+        },
+        {
+            "id": 1,
+            "queue_name": "client1.fifo",
+            "queue_url": "https://sqs.us-east-2.amazonaws.com/630265412085/client1.fifo"
+
+        }
     ]
+
 }
