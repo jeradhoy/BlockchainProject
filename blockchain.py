@@ -79,7 +79,7 @@ class Blockchain:
                     if prev_coinbase["account"] == account_name:
                         account_balance += prev_coinbase["amt"]
 
-                if account_balance > account_balance_needed:
+                if account_balance >= account_balance_needed:
                     return True
 
             return False
