@@ -85,6 +85,9 @@ class Block:
     def print(self):
         print("Block: " + str(self.index))
         [trans.print() for trans in self.data]
+        print("Creator: " + str(self.creator_id))
+        print("Verifiers: " + str(self.verifiers))
+        print("TotalStaked: " + str(self.totalStaked))
         print("PrevHash: " + str(self.prevHash))
         print("Hash: " + self.hash)
 

@@ -22,7 +22,7 @@ class Sqs:
 
         self.purge_queues()
 
-        self.verbose = False
+        self.verbose = True
 
     def purge_queues(self):
 
