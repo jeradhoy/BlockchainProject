@@ -6,7 +6,10 @@ import time
 from blockchain import Blockchain
 from sqs_recieve import Sqs
 import sqs_recieve
-from node import node
+from node import Node    
+sys.path.append("../")
+from transaction import Transaction
+
 
 def sortNodes(CONFIG):
     nodes = []
@@ -35,27 +38,73 @@ def setLeader(leaderNodeId, node_id, myNode):
         print('This node does not have the lowest ID and was no selected as the leader')
         print('########################################################################')
         print()
+        # then send amount at stake to leader queue
+
+def generate_random_transaction() -> Transaction:
+
+    node_ids = [0, 1, 2, 3]
+    from_to = random.sample(node_ids, 2)
+    amountToTransfer = random.randint(1,5)
+    trans = Transaction()
+    trans.add_transfer(from_to[0], from_to[1], amountToTransfer)
+    return trans
+
+
+# def main():
+
+#     ##### Dissss all psuedo code
+
+#     node_id = int(sys.argv[1])
+#     amountToStake = int(sys.argv[2])
+
+#     with open('../ec2_setup.json') as f:
+#         CONFIG = json.load(f)
+
+#     sqs_instance = Sqs(CONFIG, node_id)
+
+#     # create node
+#     myNode = Node(node_id, amountToStake, sqs_instance)
+
+#     #????????????????????????????
+#     myNode.elect_leader()
+
+#     #?????????????
+#     # Start 
+#     leaderThread = threading.Thread(target = myNode.leader_loop)
+#     leaderThread.start()
+
+#     # Start listener
+#     listenerThread = threading.Thread(target = myNode.listen)
+#     listenerThread.start()
+
+#     myNode.mainloop()
+
 
 
 if __name__ == "__main__":
 
     node_id = int(sys.argv[1])
     amountToStake = int(sys.argv[2])
-    myNode = node(node_id)
+
+    # create node
+    myNode = Node(node_id, amountToStake)
 
     stakeMessage = {'type': 'proofOfStake', 'amount': amountToStake}
 
-    with open('ec2_setup.json') as f:
+    with open('../ec2_setup.json') as f:
         CONFIG = json.load(f)
     
+    # find and declare leader node
     nodes = sortNodes(CONFIG)
     leaderNodeId = declareLeader(nodes)
     setLeader(leaderNodeId, node_id, myNode)
-    # if myNode.isLeader:
-    #   select which node can create block based on stake and send alert this node of that    
 
     mySqs = Sqs(CONFIG, node_id)
     mySqs.send_message_to_all_other_nodes(stakeMessage)
+
+    # if it is leader generate stake array based off others proof of stake
+    if myNode.isLeader:
+        creatorNode = myNode.pickCreator()
 
     blockchain = Blockchain("blockchain_" + str(node_id) + ".txt")
 
@@ -70,13 +119,11 @@ if __name__ == "__main__":
 
 
         #blockchain.createChainIfDoesNotExist()
-        while True:
-            firstNode = random.choice(nodes)
-            secondNode = random.choice(nodes)
-            amountToTransfer = random.randint(1,5)
-            if not firstNode == secondNode:
-                break
-        input = {'type': 'transaction', 'from': firstNode, 'to': secondNode, 'amount': amountToTransfer}
+        random_transaction = generate_random_transaction()
+        msg = {"Transaction": random_transaction.to_json()}
+        
+
+
         waitTime = random.randint(5, 15)
         time.sleep(waitTime)
         probability = random.random()
@@ -84,35 +131,14 @@ if __name__ == "__main__":
         print(probabilityString + ' probability')
         if probability < 0.2:
             print('\n New Transaction! \n')
-            print(input)
+            print(msg)
             print('')
-            blockchain.addpendingTransactions(input)
+            blockchain.transaction_queue.append(random_transaction)
             if myNode.isCreator == True:
                 # we make that block and send that bitch 
                 mySqs.send_message_to_all_other_nodes(input)
 
-        '''        while True:
-
-            print("")
-            print("Please select from the following menu:")
-            print("1. ") 
-            print("2. ") 
-            print("3. ") 
-
-            print("")
-
-            user_input = input()
-
-
-            if user_input == "1":
-
-                pass
-
-            if user_input == "2":
-
-                pass
-
-            if user_input == "3":
-               
-               pass'''
-            
+        # if it is leader generate stake array based off others proof of stake
+        if myNode.isLeader:
+            creatorNode = myNode.pickCreator()
+            mySqs.send_msg_to_node(creatorNode, json.dumps({'type':'isCreator'}))

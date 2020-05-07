@@ -6,11 +6,13 @@ This mechanism solves the “rich get richer” problem by assigning the reward 
 
 Let verifiers (miners) create blocks in each time instance (say every 20 seconds) according to a probability p, instead of by mining.
 
+- Only leader creates blocks??
 - Each verifier creates a block every 20 seconds, if there are transactions according to some probability
 
 Verifiers with a block interact through consensus to decide which one of them is allowed to add their block to the chain.
 
 - Verifier with lowest nodeid is leader and is the one to add the block to the chain
+- Do we need to implememnt bully - no, just make lowest leader
 
 The winner contacts other verifiers, who sign the block, if the containing transactions do not contain double spending transactions (spender has money to spend) and if the block creator does not exceed p in creating the block. 
 
@@ -26,11 +28,11 @@ Finally, a reward for the verifier that created the block and those who signed i
 
 
 1 - a verifier generates a block with probability p
-    - Should only the leader generate the block?
-    - What is p, is it based on stake?
+    - creator who is selected
+    - p is some fixed number
 
 3 - verifiers reach consensus on accepted blocks
-    - Don't send reply or send negative reply if you don't validate block
+    - Don't send reply (or send negative reply if you don't validate block)
 
 3 - block signed with sufficient proof of stake
     - Leader collects enough signatures with enough stake that it can be commited
@@ -42,7 +44,6 @@ Finally, a reward for the verifier that created the block and those who signed i
     - What does this mean????
 
 2 - verifiers get reward for creating a block
-    - Leader gets a reward for creating
 
 2 - verifiers get reward for signing a block
     - Encoded in block, tallied at node

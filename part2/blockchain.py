@@ -1,6 +1,9 @@
 from block import Block
 import datetime, os, typing
 from typing import *
+import sys
+sys.path.append("../")
+from transaction import Transaction
 
 class Blockchain:
 
@@ -9,7 +12,7 @@ class Blockchain:
 
         self.blockchainFile = blockchainFile
         self.blocks = []
-        self.pendingTransactions = []
+        self.transaction_queue = []
 
         if os.path.isfile(self.blockchainFile):
 
@@ -20,6 +23,7 @@ class Blockchain:
             genesisBlock = self.createGenesisBlock()
             self.blocks.append(genesisBlock)
             self.writeBlockToFile(genesisBlock)
+
 
     def build_chain_from_file(self, blockchainFile):
 
@@ -33,27 +37,112 @@ class Blockchain:
     def writeBlockToFile(self, block_to_write: Block):
 
         with open(self.blockchainFile, "a") as f:
-            f.write(block_to_write.to_json())
+            f.write(block_to_write.to_json() + "\n")
 
-    #(self, index, nonce, timestamp,.pendingTransactions, prevHash, numberOfZeros, signed='')
-    def createGenesisBlock(self): 
-        return Block(0, 1, 'genesis', '0000', True)
+    def createGenesisBlock(self):
+        gen_block = Block(0, Transaction(), None, True)
+        gen_block.hash = "000000000000000000000000000000"
+        return gen_block
+
+    def check_no_double_spending(self, block: Block):
+
+        # Check each transaction
+        for trans in block.data.trans:
+
+            account_name = trans["from"]
+            account_balance_needed = trans["amt"]
+            account_balance = 0
+
+            #-------------------
+            # Check against other transactions in the block
+            for concurrent_trans in block.data.trans:
+                if concurrent_trans.id != trans.id:
+
+                    # Account received money, increase balance
+                    if concurrent_trans["to"] == account_name:
+                        account_balance += concurrent_trans["amt"]
+
+                    # Account sent money, decrease balance
+                    if concurrent_trans["from"] == account_name:
+                        account_balance -= concurrent_trans["amt"]
+
+            for concurrent_coinbase in block.data.coinbase:
+
+                if concurrent_coinbase["account"] == account_name:
+                    account_balance += concurrent_coinbase["amt"]
+            #-------------------------
+
+
+            # Look through blocks in reverse
+            for prev_block in self.blocks[::1]:
+
+                for prev_trans in prev_block.data.trans:
+
+                    # Account received money, increase balance
+                    if prev_trans["to"] == account_name:
+                        account_balance += prev_trans["amt"]
+
+                    # Account sent money, decrease balance
+                    if prev_trans["from"] == account_name:
+                        account_balance -= prev_trans["amt"]
+
+                for prev_coinbase in prev_block.data.coinbase:
+
+                    # Account added money, increase balance
+                    if prev_coinbase["account"] == account_name:
+                        account_balance += prev_coinbase["amt"]
+
+                if account_balance > account_balance_needed:
+                    return True
+
+            return False
+
+        # Not transactions, nothing to verify
+        return True
+
+    def verifyBlock(self, block: Block):
+
+        if block.prevHash != self.getPrevHash():
+            print("Block prevhash not matchin my prevhash!!!")
+            return False
+        
+        if not self.check_no_double_spending(block):
+            print("Double spending found!!!")
+            return False
+
+        return True
     
-    def addBlockToChain(self, nonce, pendingTransactions, numberOfZeros, signed):
-        prevHash = getPrevHash()
-        block_to_append = Block(len(self.blocks), nonce, datetime.datetime.utcnow(), pendingTransactions, prevHash, numberOfZeros, signed)
-        self.blocks.append(block_to_append)
-        self.writeBlockToFile(block_to_append)
+    def addBlockToChain(self, block: Block):
+
+        self.blocks.append(block)
+        self.writeBlockToFile(block)
+        return True
 
     def getPrevHash(self):
         latestBlock = self.blocks[-1]
         return latestBlock.hash
 
     # does not include genesis block
+    def getPrevHash(self):
+        return self.blocks[-1].hash
+
     def getLength(self): 
         return len(self.blocks)-1
 
-    def addpendingTransactions(self,pendingTransaction):
+    def print(self):
+        print("-"*30)
+        for block in self.blocks:
+            block.print()
+            print("-"*30)
 
-        self.pendingTransactions.append(pendingTransaction)
-        print(self.pendingTransactions)
+
+
+
+    # def addpendingTransactions(self,pendingTransaction):
+
+    #     self.pendingTransactions.append(pendingTransaction)
+    #     print(self.pendingTransactions)
+
+if __name__ == "__main__":
+
+    bc = Blockchain("blockchain_test.txt")
