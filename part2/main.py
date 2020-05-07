@@ -14,6 +14,7 @@ if __name__ == "__main__":
 
     node_id = int(sys.argv[1])
     amountToStake = int(sys.argv[2])
+    verbose = int(sys.argv[3])
 
     with open('../ec2_setup.json') as f:
         CONFIG = json.load(f)
@@ -21,7 +22,7 @@ if __name__ == "__main__":
     mySqs = Sqs(CONFIG, node_id)
 
     # create node
-    myNode = Node(node_id, amountToStake, mySqs)
+    myNode = Node(node_id, amountToStake, mySqs, verbose)
 
     receiveThread = threading.Thread(target = myNode.receive_loop)
     receiveThread.start()

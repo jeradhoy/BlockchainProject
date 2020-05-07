@@ -19,7 +19,10 @@ class Block:
         self.verifiers = []
         self.creator_reward = 2
         self.verifier_reward = 1
-        self.totalStaked = 0
+        if totalStaked is None:
+            self.totalStaked = 0
+        else:
+            self.totalStaked = totalStaked
 
     def add_verifier(self, verifier_id):
         self.verifiers.append(verifier_id)

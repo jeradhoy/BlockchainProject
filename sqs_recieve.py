@@ -7,7 +7,7 @@ from random import randint
 from typing import *
 
 class Sqs:
-    def __init__(self, sqs_config, node_id):
+    def __init__(self, sqs_config, node_id, verbose=True):
 
         self.sqs_client = boto3.client('sqs', region_name='us-east-2')
         self.sqs_resource = boto3.resource('sqs', region_name='us-east-2')
@@ -22,7 +22,7 @@ class Sqs:
 
         self.purge_queues()
 
-        self.verbose = True
+        self.verbose = verbose
 
     def purge_queues(self):
 
