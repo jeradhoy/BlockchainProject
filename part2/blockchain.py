@@ -46,8 +46,12 @@ class Blockchain:
 
     def check_no_double_spending(self, block: Block):
 
+        # No blocks, nothing to verfy
+        if len(block.data.trans) == 0:
+            return True
+
         # Check each transaction
-        for trans in block.data.trans:
+        for i, trans in enumerate(block.data.trans):
 
             account_name = trans["from"]
             account_balance_needed = trans["amt"]
@@ -55,8 +59,9 @@ class Blockchain:
 
             #-------------------
             # Check against other transactions in the block
-            for concurrent_trans in block.data.trans:
-                if concurrent_trans.id != trans.id:
+            for j, concurrent_trans in enumerate(block.data.trans):
+
+                if i != j:
 
                     # Account received money, increase balance
                     if concurrent_trans["to"] == account_name:
@@ -72,9 +77,11 @@ class Blockchain:
                     account_balance += concurrent_coinbase["amt"]
             #-------------------------
 
-
             # Look through blocks in reverse
             for prev_block in self.blocks[::1]:
+
+                if account_balance > account_balance_needed:
+                    break
 
                 for prev_trans in prev_block.data.trans:
 
@@ -92,12 +99,11 @@ class Blockchain:
                     if prev_coinbase["account"] == account_name:
                         account_balance += prev_coinbase["amt"]
 
-                if account_balance > account_balance_needed:
-                    return True
+            # Looked through every block, compare accounts
+            if account_balance < account_balance_needed:
+                return False
 
-            return False
-
-        # Not transactions, nothing to verify
+        # No issues found!
         return True
 
     def verifyBlock(self, block: Block):

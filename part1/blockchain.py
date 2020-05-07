@@ -16,7 +16,7 @@ class Blockchain:
         self.blockchainFile = blockchainFile
         self.num_zeroes = num_zeroes
         self.blocks = []
-        # self.pendingTransactions = []
+        self.transaction_queue = []
 
         if os.path.isfile(self.blockchainFile):
 
@@ -28,7 +28,6 @@ class Blockchain:
             self.blocks.append(genesisBlock)
             self.writeBlockToFile(genesisBlock)
         
-        self.transaction_queue = []
 
     def build_chain_from_file(self, blockchainFile):
 
@@ -52,15 +51,42 @@ class Blockchain:
 
     def check_no_double_spending(self, block: Block):
 
+        # No blocks, nothing to verfy
+        if len(block.data.trans) == 0:
+            return True
+
         # Check each transaction
-        for trans in block.data.trans:
+        for i, trans in enumerate(block.data.trans):
 
             account_name = trans["from"]
             account_balance_needed = trans["amt"]
             account_balance = 0
 
+            #-------------------
+            # Check against other transactions in the block
+            for j, concurrent_trans in enumerate(block.data.trans):
+
+                if i != j:
+
+                    # Account received money, increase balance
+                    if concurrent_trans["to"] == account_name:
+                        account_balance += concurrent_trans["amt"]
+
+                    # Account sent money, decrease balance
+                    if concurrent_trans["from"] == account_name:
+                        account_balance -= concurrent_trans["amt"]
+
+            for concurrent_coinbase in block.data.coinbase:
+
+                if concurrent_coinbase["account"] == account_name:
+                    account_balance += concurrent_coinbase["amt"]
+            #-------------------------
+
             # Look through blocks in reverse
             for prev_block in self.blocks[::1]:
+
+                if account_balance > account_balance_needed:
+                    break
 
                 for prev_trans in prev_block.data.trans:
 
@@ -78,15 +104,12 @@ class Blockchain:
                     if prev_coinbase["account"] == account_name:
                         account_balance += prev_coinbase["amt"]
 
-                if account_balance > account_balance_needed:
-                    return True
+            # Looked through every block, compare accounts
+            if account_balance < account_balance_needed:
+                return False
 
-            return False
-
-        # Not transactions, nothing to verify
+        # No issues found!
         return True
-
-
 
     def addBlockToChain(self, block: Block):
 
@@ -109,7 +132,6 @@ class Blockchain:
 
     def getPrevHash(self):
         return self.blocks[-1].hash
-
 
     def print(self):
         print("-"*30)

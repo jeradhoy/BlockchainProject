@@ -86,59 +86,62 @@ if __name__ == "__main__":
     node_id = int(sys.argv[1])
     amountToStake = int(sys.argv[2])
 
-    # create node
-    myNode = Node(node_id, amountToStake)
-
-    stakeMessage = {'type': 'proofOfStake', 'amount': amountToStake}
-
     with open('../ec2_setup.json') as f:
         CONFIG = json.load(f)
-    
-    # find and declare leader node
-    nodes = sortNodes(CONFIG)
-    leaderNodeId = declareLeader(nodes)
-    setLeader(leaderNodeId, node_id, myNode)
 
     mySqs = Sqs(CONFIG, node_id)
-    mySqs.send_message_to_all_other_nodes(stakeMessage)
 
-    # if it is leader generate stake array based off others proof of stake
-    if myNode.isLeader:
-        creatorNode = myNode.pickCreator()
+    # create node
+    myNode = Node(node_id, amountToStake, mySqs)
 
-    blockchain = Blockchain("blockchain_" + str(node_id) + ".txt")
+    receiveThread = threading.Thread(target = myNode.receive_loop)
+    receiveThread.start()
+    
+    # stakeMessage = {'type': 'proofOfStake', 'amount': amountToStake}
+    # # find and declare leader node
+    # nodes = sortNodes(CONFIG)
+    # leaderNodeId = declareLeader(nodes)
+    # setLeader(leaderNodeId, node_id, myNode)
 
-    print('################################################\n')
-    print('###########    Blockchain Started    ###########\n')
-    print('################################################\n')
+    # mySqs.send_message_to_all_other_nodes(stakeMessage)
 
-    while True:
-        #message_recieved = sqs_recieve.retrieve_sqs_messages()
-        #if message_recieved != None:
-        #    pass
+    # # if it is leader generate stake array based off others proof of stake
+    # if myNode.isLeader:
+    #     creatorNode = myNode.pickCreator()
+
+    # blockchain = Blockchain("blockchain_" + str(node_id) + ".txt")
+
+    # print('################################################\n')
+    # print('###########    Blockchain Started    ###########\n')
+    # print('################################################\n')
+
+    # while True:
+    #     #message_recieved = sqs_recieve.retrieve_sqs_messages()
+    #     #if message_recieved != None:
+    #     #    pass
 
 
-        #blockchain.createChainIfDoesNotExist()
-        random_transaction = generate_random_transaction()
-        msg = {"Transaction": random_transaction.to_json()}
+    #     #blockchain.createChainIfDoesNotExist()
+    #     random_transaction = generate_random_transaction()
+    #     msg = {"Transaction": random_transaction.to_json()}
         
 
 
-        waitTime = random.randint(5, 15)
-        time.sleep(waitTime)
-        probability = random.random()
-        probabilityString = str(probability)
-        print(probabilityString + ' probability')
-        if probability < 0.2:
-            print('\n New Transaction! \n')
-            print(msg)
-            print('')
-            blockchain.transaction_queue.append(random_transaction)
-            if myNode.isCreator == True:
-                # we make that block and send that bitch 
-                mySqs.send_message_to_all_other_nodes(input)
+    #     waitTime = random.randint(5, 15)
+    #     time.sleep(waitTime)
+    #     probability = random.random()
+    #     probabilityString = str(probability)
+    #     print(probabilityString + ' probability')
+    #     if probability < 0.2:
+    #         print('\n New Transaction! \n')
+    #         print(msg)
+    #         print('')
+    #         blockchain.transaction_queue.append(random_transaction)
+    #         if myNode.isCreator == True:
+    #             # we make that block and send that bitch 
+    #             mySqs.send_message_to_all_other_nodes(input)
 
-        # if it is leader generate stake array based off others proof of stake
-        if myNode.isLeader:
-            creatorNode = myNode.pickCreator()
-            mySqs.send_msg_to_node(creatorNode, json.dumps({'type':'isCreator'}))
+    #     # if it is leader generate stake array based off others proof of stake
+    #     if myNode.isLeader:
+    #         creatorNode = myNode.pickCreator()
+    #         mySqs.send_msg_to_node(creatorNode, json.dumps({'type':'isCreator'}))

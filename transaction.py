@@ -1,9 +1,10 @@
 from typing import *
 import json
+import uuid
+
 
 class Transaction:
-    def __init__(self, coinbase: List[Dict] = None, trans: List[Dict] = None):
-
+    def __init__(self, coinbase: List[Dict] = None, trans: List[Dict] = None, id=None):
 
         # [{"amt": 100, "account": "David"}]
         if coinbase is None:
@@ -16,6 +17,8 @@ class Transaction:
             self.trans = []
         else:
             self.trans = trans
+
+        self.id = str(uuid.uuid4())
 
     def to_json(self):
         return json.dumps(self.__dict__)
@@ -38,10 +41,8 @@ class Transaction:
             print("    $" + str(item["amt"]) + " -> " + item["account"])
         print("Transactions:")
         for item in self.trans:
-            print("    $" + str(item["amt"]) + " From: " + item["from"] + " -> " + item["to"])
-
+            print("    $" + str(item["amt"]) + " From: " +
+                  item["from"] + " -> " + item["to"])
 
     def __str__(self):
         return self.to_json()
-
-    

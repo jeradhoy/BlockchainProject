@@ -1,10 +1,11 @@
 import hashlib
 import json
-# import datetime
-# from dateutil import parser
-from transaction import Transaction
 from typing import *
 import random
+
+import sys
+sys.path.append("../")
+from transaction import Transaction
 
 class Block:
     def __init__(self, index, nonce, data: Transaction, prevHash, signed=''):
@@ -24,16 +25,6 @@ class Block:
             str(self.data.to_json()).encode('utf-8') +
             str(self.prevHash).encode('utf-8'))
         return sha_protocol.hexdigest()
-
-    def getBlockData(self):
-        blockData = {'index': self.index,
-                     'nonce':self.nonce,
-                     'data':self.data,
-                     'prevHash':self.prevHash,
-                     'hash':self.hash,
-                     'signed':self.signed}
-
-        return blockData
 
     def to_json(self):
         block_dict = self.__dict__.copy()
