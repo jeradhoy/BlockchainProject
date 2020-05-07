@@ -19,11 +19,6 @@
             "queue_name": "ec24.fifo",
             "id": 3,
             "queue_url": "https://sqs.us-east-2.amazonaws.com/630265412085/ec24.fifo"	
-        },
-        {
-            "queue_name": "ec25.fifo",
-            "id": 4,
-            "queue_url": "https://sqs.us-east-2.amazonaws.com/630265412085/ec25.fifo"	
         }
     ],
     "leader": {
