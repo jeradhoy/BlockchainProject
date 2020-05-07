@@ -22,6 +22,8 @@ class Sqs:
 
         self.purge_queues()
 
+        self.verbose = False
+
     def purge_queues(self):
 
         try:
@@ -36,7 +38,7 @@ class Sqs:
         for node_info in self.nodes_sqs_info:
             if node_info["id"] == self.node_id:
                 continue
-            print("Sending to node " + str(node_info["id"]) + ": " + message)
+            # print("Sending to node " + str(node_info["id"]) + ": " + message)
             result = self.send_sqs_message(node_info["queue_url"], node_info["queue_name"], message)
 
     def send_msg_to_node(self, node_id: int, message: str):
@@ -45,8 +47,10 @@ class Sqs:
 
     def send_sqs_message(self, sqs_queue_url, queue_name, msg_body):
 
-        print("Outgoing message: " + msg_body)
+        # print("Outgoing message: " + msg_body)
         # Send the SQS message
+        if self.verbose:
+            print("Outgoing: " + msg_body)
         queue = self.sqs_resource.get_queue_by_name(QueueName=queue_name)
         try:
             dedup_id = str(randint(0,1e10))
@@ -93,7 +97,8 @@ class Sqs:
             self.sqs_client.delete_message(QueueUrl=queue_url,
                                     ReceiptHandle=msg['ReceiptHandle'])
 
-            print("Incoming Message: " + msg["Body"])
+            if self.verbose:
+                print("Incoming Message: " + msg["Body"])
             return msg["Body"]
             
 

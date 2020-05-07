@@ -112,6 +112,7 @@ class Node:
                 self.holdingElection = False
 
             if msg_json["type"] == "BullyLeader":
+                self.isLeader = False
                 self.leader_timeout_time = time.time() + 30
 
             if msg_json["type"] == "Transaction":
@@ -165,6 +166,10 @@ class Node:
                     print("Committed block to chain!")
                 else:
                     print("Did not commit block :( :(")
+            
+            if msg_json["type"] == "RemoveTransaction":
+                print("Removed transaction " + str(msg_json["trans_id"]))
+                self.bc.remove_transaction(msg_json["trans_id"])
 
     def generate_block(self):
 
@@ -258,12 +263,15 @@ class Node:
             print("Node " + str(self.nodeId) + ":")
             print("    Accured Rewards: " + str(self.accruedRewards))
             print("    Stake: " + str(self.amoutAtStake))
+            print("    Leader: " + str(self.isLeader))
             print("")
             print("Please select from the following menu:")
             print("1. Add money to account.") 
             print("2. Send money someone.") 
             print("3. Print blockchain") 
             print("4. Print transaction queue") 
+            print("5. Remove transaction from queue") 
+
 
             print("")
 
@@ -298,6 +306,15 @@ class Node:
                         print("-"*30)
                 else:
                     print("No transactions to show")
+                continue
+
+            elif user_input == "5":
+                which_trans = int(input("Which transaction do you want to remove? "))
+                id_to_remove = self.bc.transaction_queue[which_trans].id
+                print("Removed transaction " + id_to_remove)
+                self.bc.remove_transaction(id_to_remove)
+                msg = json.dumps({"type": "RemoveTransaction", "trans_id": id_to_remove})
+                self.sqs_instance.send_message_to_all_other_nodes(msg)
                 continue
 
             else:

@@ -24,6 +24,8 @@ class Blockchain:
             self.blocks.append(genesisBlock)
             self.writeBlockToFile(genesisBlock)
 
+    def remove_transaction(self, id: int):
+        self.transaction_queue = [trans for trans in self.transaction_queue if trans.id != id]
 
     def build_chain_from_file(self, blockchainFile):
 
