@@ -8,7 +8,7 @@ sys.path.append("../")
 from transaction import Transaction
 
 class Block:
-    def __init__(self, index, data: Transaction, prevHash, creator_id):
+    def __init__(self, index, data: List[Transaction], prevHash, creator_id, totalStaked=None):
 
         self.index = index
         self.data = data
@@ -19,6 +19,7 @@ class Block:
         self.verifiers = []
         self.creator_reward = 2
         self.verifier_reward = 1
+        self.totalStaked = 0
 
     def add_verifier(self, verifier_id):
         self.verifiers.append(verifier_id)
@@ -34,26 +35,41 @@ class Block:
             total += self.verifier_reward
 
         return total
+    
+    def get_transaction_total(self):
+
+        total = 0
+
+        for trans in self.data:
+
+            if trans.coinbase is not None:
+                total += trans.coinbase["amt"]
+
+            if trans.transfer is not None:
+                total += trans.transfer["amt"]
+        
+        return total
+
 
     # hashes itself with SHA256 and assigns value
     def hashBlock(self):
         sha_protocol = hashlib.sha256()
         sha_protocol.update(
             str(self.index).encode('utf-8') +
-            str(self.data.to_json()).encode('utf-8') +
+            str([trans.to_json() for trans in self.data]).encode('utf-8') +
             str(self.prevHash).encode('utf-8'))
         return sha_protocol.hexdigest()
 
     def to_json(self):
         block_dict = self.__dict__.copy()
-        block_dict["data"] = block_dict["data"].to_json()
+        block_dict["data"] = [trans.to_json() for trans in block_dict["data"]]
         return json.dumps(block_dict)
 
 
     @classmethod
     def from_json(cls, json_str):
         arg_dict = json.loads(json_str)
-        arg_dict["data"] = Transaction.from_json(arg_dict["data"])
+        arg_dict["data"] = [Transaction.from_json(trans) for trans in arg_dict["data"]]
 
         hash = arg_dict.pop("hash")
         verifiers = arg_dict.pop("verifiers")
@@ -65,16 +81,10 @@ class Block:
         block_obj.verifiers = verifiers
         return block_obj
 
-    def __str__(self):
-        obj_dict = self.__dict__.copy()
-        print(obj_dict["data"])
-        obj_dict["data"] = obj_dict["data"].__str__()
-        return json.dumps(self.__dict__)
 
     def print(self):
         print("Block: " + str(self.index))
-        print("Nonce: " + str(self.nonce))
-        self.data.print()
+        [trans.print() for trans in self.data]
         print("PrevHash: " + str(self.prevHash))
         print("Hash: " + self.hash)
 
@@ -82,7 +92,7 @@ class Block:
 if __name__ == "__main__":
     trans = Transaction()
     trans.add_transfer("hoy", "anna", 20)
-    myblock = Block(1, trans, "000000000000", 0)
+    myblock = Block(1, [trans], "000000000000", 0)
 
     json_string = myblock.to_json()
     print(json_string)

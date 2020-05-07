@@ -8,6 +8,7 @@ from blockchain import Blockchain
 sys.path.append("../")
 from sqs_recieve import Sqs
 from transaction import Transaction
+from itertools import chain
 
 
 class Node:
@@ -18,59 +19,34 @@ class Node:
         self.sqs_instance = sqs_instance
 
         self.accruedRewards = 0
-    
 
+        self.bc = Blockchain("verifier_" + str(nodeId) + ".txt")
 
-        # means that they can create the block
-        self.isCreator = False
-
-        self.bc = Blockchain("verifier_" + str(id) + ".txt")
-
-        # put dummie values in this for now for testing
-        self.totalAtStakeDict = {0: 1000, 1: 2000, 3: 3000, 4: 500}
-        # self.atStakeDict = {}
-        # self.atStakeDict[nodeId] = amoutAtStake
-
-        self.stakeArray = []
-
-        # means that they can select who creates the block
+        # means that they can select who commits the block
         self.isLeader = False
 
         self.leader_timeout_time = time.time() + 5
         self.in_election_timeout_time = 0
         self.holdingElection = False
 
+        self.p = .8
 
-    # when we recieve amount at stake from leader queue we append them
-    # by node id to index
-    def appendToTotalAtStake(self, amount, nodeId):
-        if self.isLeader:
-            self.amoutAtStake[self.nodeId] = self.amoutAtStake
-            self.totalAtStakeDict[nodeId] = amount
+        self.latest_block: Block = None
 
-    def generateStakeArray(self):
-        s = {k: v for k, v in sorted(self.totalAtStakeDict.items(), key=lambda item: item[1], reverse=True)}
-        self.totalAtStakeDict = s
-        number = len(self.totalAtStakeDict)
-        for node in self.totalAtStakeDict:
-            for i in range(number):
-                self.stakeArray.append(node)
-            number -= 1
+
 
     def commitBlockToBlockchain(self, block: Block):
 
         success = self.bc.addBlockToChain(block)
-        self.accruedRewards += block.getRewards(self.nodeId)
+        if success:
+            self.accruedRewards += block.get_rewards(self.nodeId)
+
+            return True
+        else:
+            return False
 
         
 
-    def pickCreator(self):
-        #   select which node can create block based on stake and send alert this node of that    
-        self.generateStakeArray()
-        waitTime = random.randint(5, 15)
-        time.sleep(waitTime)
-        creatorNode = random.choice(self.stakeArray)
-        return creatorNode
 
     def start_election(self):
 
@@ -87,7 +63,7 @@ class Node:
 
             
     def send_bully_leader(self):
-        msg = json.dumps({"type": "BullyLeader"})
+        msg = json.dumps({"type": "BullyLeader", "nodeId": self.nodeId})
         for node_sqs in self.sqs_instance.nodes_sqs_info:
             if node_sqs["id"] < self.nodeId:
                 self.sqs_instance.send_msg_to_node(node_sqs["id"], msg)
@@ -112,7 +88,7 @@ class Node:
                     bully_leader_msg_timeout = time.time() + 5
             
             # Check if leader has timedout
-            if time.time() > self.leader_timeout_time:
+            if time.time() > self.leader_timeout_time and self.isLeader == False:
                 print("Timeout!")
                 self.start_election()
 
@@ -123,7 +99,7 @@ class Node:
 
             # print(msg)
             msg_json = json.loads(msg)
-            print(msg_json)
+            # print(msg_json)
 
             if msg_json["type"] == "BullyElection":
                 if msg_json["nodeId"] < self.nodeId:
@@ -134,26 +110,160 @@ class Node:
             if msg_json["type"] == "BullyOK":
                 print("Received OK, standing down!")
                 self.holdingElection = False
-                # self.isLeader = False
 
             if msg_json["type"] == "BullyLeader":
                 self.leader_timeout_time = time.time() + 30
 
+            if msg_json["type"] == "Transaction":
+                new_trans = Transaction.from_json(msg_json["data"])
+                self.bc.transaction_queue.append(new_trans)
+
+            if msg_json["type"] == "ChosenOne":
+                # Send block around for signatures
+                block_msg = json.dumps({"type": "SignatureRequest", "block": self.latest_block.to_json(), "nodeId": self.nodeId})
+                self.sqs_instance.send_message_to_all_other_nodes(block_msg)
+
+            if msg_json["type"] == "SignatureRequest":
+
+                block_to_verify = Block.from_json(msg_json["block"])
+                if self.bc.verifyBlock(block_to_verify) == True:
+                    print("Verfied request")
+                    verify_msg = json.dumps({"type": "SignatureGranted", "block_hash": block_to_verify.hash, "stake": self.amoutAtStake, "nodeId": self.nodeId})
+                    self.sqs_instance.send_msg_to_node(msg_json["nodeId"], verify_msg)
+                else:
+                    print("Did not verfy request")
+
+
+            if msg_json["type"] == "SignatureGranted":
+
+                if self.latest_block == None:
+                    continue
+
+                if msg_json["block_hash"] == self.latest_block.hash:
+                    self.latest_block.add_verifier(msg_json["nodeId"])
+                    self.latest_block.totalStaked += msg_json["stake"]
+
+                else:
+                    print("Hash from signature doesn't match...")
+
+                if self.latest_block.totalStaked >= self.latest_block.get_transaction_total():
+
+                    print("Commmitting my block!")
+                    success = self.commitBlockToBlockchain(self.latest_block)
+                    if not success:
+                        print("Woooaaahhh, why didn't it commit!?")
+
+                    commit_msg = json.dumps({"type": "CommitBlock", "block": self.latest_block.to_json()})
+                    self.sqs_instance.send_message_to_all_other_nodes(commit_msg)
+                    self.latest_block = None
+
+            if msg_json["type"] == "CommitBlock":
+
+                block_to_commit = Block.from_json(msg_json["block"])
+                success = self.commitBlockToBlockchain(block_to_commit)
+                if success:
+                    print("Committed block to chain!")
+                else:
+                    print("Did not commit block :( :(")
+
+    def generate_block(self):
+
+        # Generate block from last five transactions
+        gen_block = Block(self.bc.getLength(), self.bc.transaction_queue[0:5], self.bc.getPrevHash(), self.nodeId)
+        gen_block.totalStaked += self.amoutAtStake
+        return gen_block
+
+
+    # Everybody creates a block with probability p every 20 seconds
+    def create_block_loop(self):
+
+        while True:
+
+            if round(time.time()) % 30 != 0:
+                continue
+
+            if random.random() < self.p:
+
+                if len(self.bc.transaction_queue) == 0:
+                    print("No transactions in queue, no block to create!")
+                    time.sleep(1)
+                    continue
+
+                print("Creating block!")
+                # Create block
+                self.latest_block = self.generate_block()
+
+                msg = json.dumps({"type": "BlockGenerated", "block_index": self.latest_block.index, "nodeId": self.nodeId, "stake": self.amoutAtStake})
+                self.sqs_instance.send_to_leader(msg)
+
+            else:
+                self.latest_block = None
+            
+            time.sleep(1)
 
 
 
 
+    def leader_loop(self):
 
+        gen_block_timeout_time = 0
+        block_index = 0
+        node_gen_stakes = {}
+        selection_in_process = False
+
+        while True:
+
+            if not self.isLeader:
+                continue
+
+            # Assign block
+            if time.time() > gen_block_timeout_time and selection_in_process == True:
+
+                select_list = list(chain.from_iterable([k]*v for k,v in node_gen_stakes.items()))
+                chosen_node = random.choice(select_list)
+
+                selection_msg = json.dumps({"type": "ChosenOne", "block_index": block_index})
+                self.sqs_instance.send_msg_to_node(chosen_node, selection_msg)
+
+                print("Selected node " + str(chosen_node) + " to commit block.")
+
+                node_gen_stakes = {}
+                selection_in_process = False
         
+            msg = self.sqs_instance.retrieve_leader_message()
+
+            if msg is None:
+                continue
+
+            msg_json = json.loads(msg)
+            # print(msg_json)
+
+            if msg_json["type"] == "BlockGenerated":
+
+                if time.time() > gen_block_timeout_time:
+                    print("Starting node selection!")
+                    gen_block_timeout_time = time.time() + 5
+                    block_index = msg_json["block_index"]
+                    selection_in_process = True
+
+                node_gen_stakes[msg_json["nodeId"]] = msg_json["stake"]
+    
+
     def mainloop(self):
 
         while True:
 
             print("")
+
+            print("Node " + str(self.nodeId) + ":")
+            print("    Accured Rewards: " + str(self.accruedRewards))
+            print("    Stake: " + str(self.amoutAtStake))
+            print("")
             print("Please select from the following menu:")
             print("1. Add money to account.") 
             print("2. Send money someone.") 
             print("3. Print blockchain") 
+            print("4. Print transaction queue") 
 
             print("")
 
@@ -180,11 +290,21 @@ class Node:
                 self.bc.print()
                 continue
 
+            elif user_input == "4":
+                if len(self.bc.transaction_queue) > 0:
+                    print("-"*30)
+                    for my_trans in self.bc.transaction_queue:
+                        my_trans.print()
+                        print("-"*30)
+                else:
+                    print("No transactions to show")
+                continue
+
             else:
                 continue
 
             # Send transaction to other nodes
-            msg = json.dumps({"Transaction": trans.to_json()})
+            msg = json.dumps({"type": "Transaction", "data": trans.to_json()})
             self.sqs_instance.send_message_to_all_other_nodes(msg)
 
             self.bc.transaction_queue.append(trans)
